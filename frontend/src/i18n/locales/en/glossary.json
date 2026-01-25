@@ -196,6 +196,8 @@
   "Verbs": "Verbs",
   "RuntimeClass": "RuntimeClass",
   "Secrets": "Secrets",
+  "Service Information": "Service Information",
+  "Owner": "Owner",
   "Services": "Services",
   "Map": "Map",
   "Workloads": "Workloads",

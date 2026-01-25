@@ -196,6 +196,8 @@
   "Verbs": "동작",
   "RuntimeClass": "런타임 클래스",
   "Secrets": "시크릿",
+  "Service Information": "",
+  "Owner": "",
   "Services": "서비스",
   "Map": "맵",
   "Workloads": "워크로드",
