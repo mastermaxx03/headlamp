@@ -30,75 +30,69 @@ import { getA8RMetadata } from './A8RServiceInfo';
 export default function ServiceList() {
   const { t } = useTranslation(['glossary', 'translation']);
   const { items } = Service.useList({ namespace: useNamespaces() });
-  const showOwnerColumn = useMemo(() => {
-    if (!items || items.length === 0) return false;
-    return items.some(service => service?.metadata?.annotations?.['a8r.io/owner']);
+
+  const hideOwnerColumn = useMemo(() => {
+    if (!items || items.length === 0) return true;
+    const hasOwner = items.some(service => service?.metadata?.annotations?.['a8r.io/owner']);
+    return !hasOwner;
   }, [items]);
-
-  // Build columns array based on whether owner annotation exists
-  const columns = useMemo(() => {
-    const cols: any[] = ['name', 'namespace', 'cluster'];
-
-    if (showOwnerColumn) {
-      cols.push({
-        id: 'a8r-owner',
-        label: t('Owner'),
-        gridTemplate: 'auto',
-        getValue: (service: Service) => service.metadata?.annotations?.['a8r.io/owner'] ?? '-',
-        render: (service: Service) => service.metadata?.annotations?.['a8r.io/owner'] || '-',
-      });
-    }
-
-    cols.push(
-      {
-        id: 'type',
-        label: t('translation|Type'),
-        gridTemplate: 'min-content',
-        filterVariant: 'multi-select',
-        getValue: (service: Service) => service.spec?.type,
-      },
-      {
-        id: 'clusterIP',
-        label: t('Cluster IP'),
-        gridTemplate: 'min-content',
-        getValue: (service: Service) => service.spec?.clusterIP,
-      },
-      {
-        id: 'externalIP',
-        label: t('External IP'),
-        gridTemplate: 'min-content',
-        getValue: (service: Service) => service.getExternalAddresses() || '-',
-      },
-      {
-        id: 'ports',
-        label: t('Ports'),
-        gridTemplate: 'auto',
-        getValue: (service: Service) => service.getFormattedPorts()?.join(', '),
-        render: (service: Service) => <LabelListItem labels={service.getFormattedPorts() ?? []} />,
-      },
-      {
-        id: 'selector',
-        label: t('Selector'),
-        gridTemplate: 'auto',
-        getValue: (service: Service) => service.getSelector().join(', '),
-        render: (service: Service) =>
-          service.spec?.selector ? <MetadataDictGrid dict={service.spec.selector} /> : null,
-      },
-      'age'
-    );
-    return cols;
-  }, [showOwnerColumn, t]);
 
   return (
     <ResourceListView
       title={t('Services')}
-      data={items}
-      columns={columns}
+      resourceClass={Service}
+      hideColumns={hideOwnerColumn ? ['a8r-owner'] : []}
+      columns={[
+        'name',
+        'namespace',
+        'cluster',
+        {
+          id: 'a8r-owner',
+          label: t('Owner'),
+          gridTemplate: 'auto',
+          getValue: service => service.metadata?.annotations?.['a8r.io/owner'] ?? '-',
+        },
+        {
+          id: 'type',
+          label: t('translation|Type'),
+          gridTemplate: 'min-content',
+          filterVariant: 'multi-select',
+          getValue: service => service.spec.type,
+        },
+        {
+          id: 'clusterIP',
+          label: t('Cluster IP'),
+          gridTemplate: 'min-content',
+          getValue: service => service.spec.clusterIP,
+        },
+        {
+          id: 'externalIP',
+          label: t('External IP'),
+          gridTemplate: 'min-content',
+          getValue: service => service.getExternalAddresses() || '-',
+        },
+        {
+          id: 'ports',
+          label: t('Ports'),
+          gridTemplate: 'auto',
+          getValue: service => service.getFormattedPorts()?.join(', '),
+          render: service => <LabelListItem labels={service.getFormattedPorts() ?? []} />,
+        },
+        {
+          id: 'selector',
+          label: t('Selector'),
+          gridTemplate: 'auto',
+          getValue: service => service.getSelector().join(', '),
+          render: service =>
+            service.spec.selector ? <MetadataDictGrid dict={service.spec.selector} /> : null,
+        },
+        'age',
+      ]}
       actions={[
         {
           id: 'a8r-actions',
           action: ({ item, closeMenu }) => {
-            const annotations = item.metadata?.annotations ?? {};
+            const annotations = item.metadata.annotations ?? {};
             const metadata = getA8RMetadata(annotations).filter(m => m.isLink);
 
             if (metadata.length === 0) return null;
