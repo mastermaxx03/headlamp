@@ -61,7 +61,29 @@ interface PodLogViewerProps extends Omit<LogViewerProps, 'logs'> {
 
 export function PodLogViewer(props: PodLogViewerProps) {
   const { item, onClose, open, ...other } = props;
+  function getDefaultContainer(): string {
+    if (!item) return '';
+    const runningMain = item.status?.containerStatuses?.find(s => s.state?.running);
+    if (runningMain) return runningMain.name;
+    const activeInit = item.status?.initContainerStatuses?.find(
+      s => s.state?.running || s.state?.waiting
+    );
+    if (activeInit) return activeInit.name;
+    if (item.spec?.containers?.length) {
+      return item.spec.containers[0].name;
+    }
+    if (item.spec?.initContainers?.length) {
+      return item.spec.initContainers[0].name;
+    }
+    return '';
+  }
   const [container, setContainer] = React.useState(getDefaultContainer());
+  React.useEffect(() => {
+    const next = getDefaultContainer();
+    if (next && next !== container) {
+      setContainer(next);
+    }
+  }, [item?.status]);
   const [showPrevious, setShowPrevious] = React.useState<boolean>(false);
   const [showTimestamps, setShowTimestamps] = useLocalStorageState<boolean>(
     'headlamp.logs.showTimestamps',
@@ -80,10 +102,6 @@ export function PodLogViewer(props: PodLogViewerProps) {
   const [cancelLogsStream, setCancelLogsStream] = React.useState<(() => void) | null>(null);
   const xtermRef = React.useRef<XTerminal | null>(null);
   const { t } = useTranslation();
-
-  function getDefaultContainer() {
-    return item.spec.containers.length > 0 ? item.spec.containers[0].name : '';
-  }
 
   const options = { leading: true, trailing: true, maxWait: 1000 };
 

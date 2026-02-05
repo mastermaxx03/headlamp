@@ -70,8 +70,18 @@ export default function Terminal(props: TerminalProps) {
   });
   const { t } = useTranslation(['translation', 'glossary']);
 
-  function getDefaultContainer() {
-    return item.spec.containers.length > 0 ? item.spec.containers[0].name : '';
+  function getDefaultContainer(): string {
+    const runningMain = item.status?.containerStatuses?.find(s => s.state?.running);
+    if (runningMain) return runningMain.name;
+    const runningInit = item.status?.initContainerStatuses?.find(s => s.state?.running);
+    if (runningInit) return runningInit.name;
+    if (item.spec.containers.length > 0) {
+      return item.spec.containers[0].name;
+    }
+    if (item.spec.initContainers?.length) {
+      return item.spec.initContainers[0].name;
+    }
+    return '';
   }
 
   // @todo: Give the real exec type when we have it.
